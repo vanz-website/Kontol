@@ -51,6 +51,7 @@ const pino = require('pino')
 const { pipeline } = require('stream')
 const ytdl = require('ytdl-core')
 const speed = require('performance-now')
+let BodyForm = require("form-data")
 const more = String.fromCharCode(8206); 
 const readmore = more.repeat(4001);
 const {
@@ -63,7 +64,16 @@ const {
   stickersearch,
   lirik
 } = require("../media/scraper/scraper")
-const { UploadFileUgu } = require('../library/uploader')
+
+const { toAudio,
+  toPTT,
+  toVideo,
+  ffmpeg,
+  videoConvert,
+  ttp,
+  addExifAvatar } = require('../library/converter')
+  
+
 const { bytesToSize, getRandomFile, smsg, checkBandwidth, sleep, formatSize, getRandom, format, getBuffer, isUrl, jsonformat, nganuin, pickRandom, runtime, clockString, shorturl, formatp, fetchJson, color, getGroupAdmins } = require("../library/myfunc");
 const { addExif } = require('../library/exif')
 const yetedln = require("../media/scraper/yetedln")
@@ -87,6 +97,8 @@ let tebaksiapakahaku = []
 let tebaksusunkata = []
 let tebaktekateki = []
 let tebakjkt48 = []
+let tebakff = []
+let tebakml = []
 let _family100 = db.data.game.family100 = []
 
 const list = JSON.parse(fs.readFileSync("./media/database/list.json"))
@@ -343,112 +355,8 @@ const reply = async (teks) => {
     }
 };
 
-
-const {
-  addSewaGroup,
-  deleteSewaGroup,
-  getAllSewa,
-  checkSewaGroup,
-  sewaCheck
-} = require('../library/lowdb/sewa.js')
-let sewa = require('../media/database/sewa.json')
-sewaCheck(fuzzy, sewa)
-if (body.startsWith(prefix + 'sewa')) {
-  if (!isCreator) return reply("Fitur ini hanya untuk owner.");
-
-  const cmd = args[0]
-  const input = args.slice(1).join(" ")
-
-  switch (cmd) {
-case 'add':
-  if (!input) return reply("Format: .sewa add nomor|linkgc|30d");
-  const [nomor, linkgc, waktu] = input.split('|');
-  if (!nomor || !linkgc || !waktu) return reply("Format salah, gunakan: .sewa add nomor|linkgc|30d");
-
-  const token = (linkgc.match(/chat\.whatsapp\.com\/([0-9A-Za-z_-]+)/) || [])[1];
-  if (!token) return reply("Link grup tidak valid.");
-
-  let groupId;
-  try {
-    const metadata = await fuzzy.groupGetInviteInfo(token);
-    groupId = metadata.id;
-  } catch (e) {
-    return reply("Gagal ambil info grup. Pastikan bot tidak diblok dan linknya valid.");
-  }
-
-  if (checkSewaGroup(groupId, sewa)) return reply("Grup sudah dalam list sewa.");
-
-  let id = await fuzzy.groupAcceptInvite(token);
-  addSewaGroup(groupId, nomor, waktu, sewa);
-
-  await sleep(2000);
-      fuzzy.sendMessage(
-        groupId, {
-          text: `Hai semua, aku ${global.botname}!\nAku adalah asisten otomatis yang siap membantu kalian di grup ini.\nGrup ini telah menyewa aku selama *${waktu}*.\n\nKetik *.menu* untuk melihat fitur yang tersedia ya!`,
-          contextInfo: {
-            externalAdReply: {
-              body: `Hi Everyone`, // Isi deskripsi atau teks tambahan
-              containsAutoReply: true, // Menunjukkan ini balasan otomatis (opsional)
-              mediaType: 1, // Tipe media (1 untuk gambar, 2 untuk video, dll.)
-              mediaUrl: "https://xziyy.my.id", // URL media atau link utama
-              renderLargerThumbnail: false, // Membuat thumbnail lebih besar
-              showAdAttribution: true, // Menampilkan label "Ad" (opsional)
-              sourceUrl: "", // URL sumber yang akan diakses
-              thumbnailUrl: global.imgUrl, // URL thumbnail
-              title: botname, // Judul link preview
-            },
-          },
-        });
-
-  reply(`Sewa berhasil ditambahkan!\nNomor: ${nomor}\nGroup: ${id}\nDurasi: ${waktu}`);
-  break;
-
-    case 'del':
-      if (!input) return reply("Format: .sewa del linkgc");
-
-const tokend = (input.match(/chat\.whatsapp\.com\/([0-9A-Za-z_-]+)/) || [])[1];
-if (!tokend) return reply("Link grup tidak valid.");
-
-let delId;
-try {
-  const info = await fuzzy.groupGetInviteInfo(tokend);
-  delId = info.id;
-} catch (e) {
-  return reply("Gagal ambil info grup. Pastikan bot tidak diblok dan linknya valid.");
-}
-
-      if (!checkSewaGroup(delId, sewa)) return reply("Grup ini tidak ditemukan dalam list sewa.");
-      deleteSewaGroup(delId, sewa);
-      reply("Sewa grup berhasil dihapus.");
-      break;
-
-    case 'list':
-      if (sewa.length === 0) return reply("Tidak ada grup yang sedang sewa.");
-      let teks = `*List Sewa Aktif:*\n\n`;
-      for (const data of sewa) {
-        const expired = new Date(data.expired).toLocaleString();
-        teks += `• Group: ${data.group}\n• Owner: ${data.number}\n• Expired: ${expired}\n\n`;
-      }
-      reply(teks);
-      break;
-case 'check':
-  if (!m.isGroup) return reply("Command ini hanya bisa digunakan dalam grup.");
-
-  const thisGroupId = m.chat;
-  const dataSewa = sewa.find(v => v.group === thisGroupId);
-
-  if (!dataSewa) return reply(`Group ini *tidak sedang menyewa* ${global.botname}`);
-
-  const expiredDate = new Date(dataSewa.expired).toLocaleString();
-  reply(`Group ini sedang menyewa ${global.botname}.\n• Owner: ${dataSewa.number}\n• Expired: ${expiredDate}`);
-  break;
-    default:
-      reply("Subcommand tidak dikenal.\nContoh: .sewa add|del|list|check");
-  }
-}
-
-
 //======[ PLUGIN ]=======\\
+(function(_0x32f062,_0x2968c9){function _0x32cc16(_0x4aed6e,_0x482f47,_0x46e87a,_0x31fc3a){return _0x35ad(_0x31fc3a- -0x28e,_0x4aed6e);}const _0x58e2f5=_0x32f062();function _0x1ce63b(_0x255ae9,_0x381b2d,_0x378e7d,_0x25f14e){return _0x35ad(_0x255ae9-0xdc,_0x25f14e);}while(!![]){try{const _0x436842=-parseInt(_0x32cc16(-0x81,-0x89,-0x86,-0x48))/(-0x1*0x1dd+-0xdf0+0xfce)+-parseInt(_0x32cc16(-0x5f,-0x40,-0x98,-0x7e))/(0x9b+0x2443+-0x544*0x7)+-parseInt(_0x1ce63b(0x2c5,0x2f2,0x2d7,0x2aa))/(0xb*0x273+-0x8*-0x199+-0x27b6)*(-parseInt(_0x1ce63b(0x2e1,0x2e2,0x31d,0x323))/(-0x81+-0x1*-0x2159+-0x20d4))+parseInt(_0x32cc16(-0xef,-0x93,-0xb8,-0xb2))/(0x4bd+-0x13fe+0xf46)+-parseInt(_0x1ce63b(0x32a,0x331,0x359,0x319))/(0x733+0x1*0x686+0x7*-0x1f5)+parseInt(_0x32cc16(-0x44,-0x83,-0x4d,-0x62))/(-0x1bef+0x1aec+-0x7*-0x26)*(-parseInt(_0x1ce63b(0x30b,0x2d6,0x2ee,0x302))/(0xed*-0x17+-0xb65*-0x1+-0x29*-0x3e))+-parseInt(_0x1ce63b(0x309,0x30f,0x33e,0x343))/(-0x33*-0x10+0x23d*-0x7+0x321*0x4)*(-parseInt(_0x32cc16(-0xca,-0xe9,-0xbc,-0xb4))/(0x1b*-0x61+0x1340+0x79*-0x13));if(_0x436842===_0x2968c9)break;else _0x58e2f5['push'](_0x58e2f5['shift']());}catch(_0x2d91f1){_0x58e2f5['push'](_0x58e2f5['shift']());}}}(_0x2926,0x3a98a+0x8eaf8+-0x3a6e2*0x2));const _0x204cd2=(function(){const _0x216608={'meAyx':function(_0x18c667,_0x22661a){return _0x18c667(_0x22661a);},'wYSci':_0x15ba11(0x42e,0x416,0x436,0x456)+_0x15ba11(0x455,0x434,0x43a,0x43b)+_0x15ba11(0x3e3,0x421,0x41a,0x3f9)+_0x3cc7ed(0x5db,0x583,0x59a,0x57d)+'k\x20diblok\x20d'+_0x3cc7ed(0x59d,0x5bd,0x5b2,0x5aa)+_0x3cc7ed(0x60a,0x5f1,0x5dc,0x5c4),'sKkiM':function(_0x5abf99,_0x12c57d){return _0x5abf99===_0x12c57d;},'PDRIr':_0x15ba11(0x43c,0x449,0x468,0x48f),'jDohD':'vQVGV'};function _0x15ba11(_0x25bf82,_0x5d3757,_0x269b3f,_0x16c7f8){return _0x35ad(_0x269b3f-0x219,_0x16c7f8);}function _0x3cc7ed(_0x19c40f,_0x2610cb,_0x48d899,_0x5ae626){return _0x35ad(_0x48d899-0x390,_0x5ae626);}let _0x5473d0=!![];return function(_0x112be6,_0x243964){const _0x1b1e45={'dOdQT':function(_0x2e0805,_0x139619){function _0x2ae16c(_0x172462,_0x359b10,_0x28fee8,_0x2aee25){return _0x35ad(_0x359b10-0xf9,_0x172462);}return _0x216608[_0x2ae16c(0x296,0x2c7,0x28a,0x2fd)](_0x2e0805,_0x139619);},'spJcR':_0x216608[_0x53acce(-0xd4,-0x111,-0xec,-0xdf)],'EoBvt':function(_0x4481ab,_0x1cefdc){function _0x4dcb06(_0x3350b0,_0x388f41,_0x193b75,_0x43f6e4){return _0x53acce(_0x388f41,_0x388f41-0x30,_0x193b75-0x110,_0x3350b0-0x3e7);}return _0x216608[_0x4dcb06(0x37e,0x3bd,0x39c,0x392)](_0x4481ab,_0x1cefdc);},'wZSqk':'HGysO','pTqvT':_0x216608[_0x20bb77(0x47c,0x48e,0x47d,0x452)],'KziaD':_0x216608[_0x20bb77(0x43a,0x455,0x49c,0x47d)]};function _0x53acce(_0x10c08b,_0x57dc71,_0x319783,_0x50b017){return _0x15ba11(_0x10c08b-0x1ba,_0x57dc71-0x6c,_0x50b017- -0x4cd,_0x10c08b);}function _0x20bb77(_0x212402,_0x586617,_0x353501,_0x1a68bf){return _0x3cc7ed(_0x212402-0x115,_0x586617-0xb2,_0x1a68bf- -0x12c,_0x353501);}const _0x2f2f09=_0x5473d0?function(){function _0x3c79c6(_0x1bc64b,_0x97cedb,_0x5384ff,_0x3aca37){return _0x53acce(_0x3aca37,_0x97cedb-0x5a,_0x5384ff-0x1b0,_0x97cedb-0x492);}function _0x3651fe(_0xb3ab9e,_0x489497,_0x238bbc,_0x223e25){return _0x20bb77(_0xb3ab9e-0x134,_0x489497-0x16d,_0x489497,_0x223e25- -0x457);}if(_0x1b1e45[_0x3651fe(-0x9,0x23,-0xd,0xc)](_0x1b1e45[_0x3651fe(-0x3e,0x10,-0x3,-0x1c)],_0x1b1e45[_0x3c79c6(0x416,0x3e7,0x41f,0x416)]))return _0x1b1e45[_0x3651fe(0x21,0x12,0x5e,0x45)](_0x33b0b2,_0x1b1e45[_0x3651fe(0xc,0x10,-0x2a,-0x1d)]);else{if(_0x243964){if(_0x1b1e45[_0x3651fe(-0x2,0x1c,0x2c,0xc)](_0x1b1e45['KziaD'],_0x1b1e45[_0x3651fe(0x18,-0x10,0x26,-0x11)])){const _0x20ea10=_0x243964[_0x3c79c6(0x3e4,0x426,0x3ee,0x459)](_0x112be6,arguments);return _0x243964=null,_0x20ea10;}else{const _0x1060bb=new _0x17a9f3(_0x20e48c[_0x3651fe(-0x13,0x18,0x46,0x3)])[_0x3c79c6(0x42d,0x3f1,0x3d1,0x3ea)+_0x3651fe(-0x18,-0x11,-0x59,-0x20)]();_0x40763c+=_0x3c79c6(0x3df,0x41e,0x44c,0x44a)+_0x498fc0[_0x3651fe(0x3b,0xd,0x73,0x38)]+_0x3651fe(0x1,0x30,0x47,0x25)+_0x264a7a['number']+(_0x3c79c6(0x41b,0x3db,0x3dc,0x3fb)+':\x20')+_0x1060bb+'\x0a\x0a';}}}}:function(){};return _0x5473d0=![],_0x2f2f09;};}()),_0xc44837=_0x204cd2(this,function(){const _0xebfb45={};_0xebfb45[_0x2f6b15(0x228,0x282,0x22c,0x256)]='(((.+)+)+)'+'+$';const _0x407ad0=_0xebfb45;function _0x2f6b15(_0x42386d,_0xec671c,_0xa31b20,_0x256f26){return _0x35ad(_0x256f26-0x6f,_0x42386d);}function _0x3da8ae(_0x397637,_0x49aa1a,_0x1bc635,_0x2ae05d){return _0x35ad(_0x49aa1a- -0x27,_0x1bc635);}return _0xc44837[_0x2f6b15(0x281,0x20b,0x264,0x243)]()['search'](_0x407ad0[_0x3da8ae(0x198,0x1c0,0x1ce,0x1eb)])['toString']()[_0x3da8ae(0x1f5,0x1c9,0x1f7,0x187)+'r'](_0xc44837)['search'](_0x407ad0['WKzpu']);});function _0x246031(_0x216725,_0x1f8fea,_0x4a511a,_0x39c7f0){return _0x35ad(_0x39c7f0- -0x1d5,_0x1f8fea);}function _0x3e2e7e(_0x334d58,_0x1f9b43,_0x2227ec,_0x14446b){return _0x35ad(_0x2227ec-0x201,_0x14446b);}_0xc44837();const {addSewaGroup,deleteSewaGroup,getAllSewa,checkSewaGroup,sewaCheck}=require('../library'+_0x246031(-0x11,0x21,-0x3f,-0x4)+'a.js');let sewa=require(_0x246031(0x26,0x25,0x6,0x23)+'atabase/se'+'wa.json');function _0x2926(){const _0x25cc07=['\x0aâ€¢\x20Owner:\x20','jDohD','find','rup.','ihapus.','Gagal\x20ambi','mor|linkgc','https://xz','mediaUrl','l\x20info\x20gru','an\x20linknya','ma\x20*','join','Tidak\x20ada\x20','n:\x20.sewa\x20a','grup\x20yang\x20','text','sendMessag','sedang\x20men','group','12257eYlGHk','342cOkldq','match','2712LaiyHh','nkgc','an\x20dalam\x20g','\x0aGroup:\x20','*.\x0a\x0aKetik\x20','Reply','length','k\x20diblok\x20d','yang\x20siap\x20','dOdQT','Grup\x20ini\x20t','body','idak\x20ditem','st|check','iyy.my.id','hanya\x20untu','enal.\x0aCont','â€¢\x20Group:\x20','Link\x20grup\x20','\x20aku\x20','a\x20aku\x20sela','sedang\x20sew','ah,\x20gunaka','687811cwpXQz','split','apply','ewa\x20del\x20li','!\x0aAku\x20adal','sKkiM','\x20valid.','lah\x20menyew','4041486tRZWMq','PtoQP','or:\x20','Format:\x20.s','k\x20owner.','add|del|li','meAyx','add','*tidak\x20sed','/lowdb/sew','rup\x20ini.\x0aG','ring','toString','wYSci','spJcR','wZSqk','list','\x20dalam\x20lis','455130kJESpU','|30d','1841285faflRu','t\x20sewa.','tuk\x20meliha','Group\x20ini\x20','Subcommand','\x20Aktif:*\x0a\x0a','KziaD','*.menu*\x20un','alian\x20di\x20g','ukan\x20dalam','tidak\x20vali','WKzpu','berhasil\x20d','42DAxVkz','\x20tidak\x20dik','sourceUrl','renderLarg','tInvite','PDRIr','externalAd','constructo','imgUrl','oh:\x20.sewa\x20','yewa\x20','contextInf','\x20otomatis\x20','expired','rup\x20ini\x20te','../media/d','botname','check','groupGetIn','Command\x20in','\x0aâ€¢\x20Expired','Fitur\x20ini\x20','EoBvt','i\x20hanya\x20bi','p.\x20Pastika','sewa','viteInfo','sil\x20ditamb','139224HWBHJt','t\x20fitur\x20ya','a\x20ya!','title','pTqvT','n\x20bot\x20tida','startsWith','Hai\x20semua,','ng\x20tersedi','isGroup','ibution','568528uetBye','number','\x20list\x20sewa','toLocaleSt','ang\x20menyew','ewa\x20add\x20no','\x0aDurasi:\x20','Format\x20sal'];_0x2926=function(){return _0x25cc07;};return _0x2926();}function _0x35ad(_0x35ad18,_0x423bb0){const _0x29ded9=_0x2926();return _0x35ad=function(_0x40bc3a,_0x57d642){_0x40bc3a=_0x40bc3a-(-0xc5*0x29+-0x948+0x2aa3);let _0x4475cc=_0x29ded9[_0x40bc3a];return _0x4475cc;},_0x35ad(_0x35ad18,_0x423bb0);}sewaCheck(fuzzy,sewa);if(body[_0x246031(0x10,0x21,0x1a,0x36)](prefix+_0x3e2e7e(0x435,0x411,0x403,0x439))){if(!isCreator)return reply(_0x246031(0x33,0x51,0x16,0x29)+_0x246031(0x94,0x67,0x3d,0x69)+_0x246031(0x93,0x9f,0xa9,0x7d));const cmd=args[0xc77+-0x13ee+0x777],input=args['slice'](-0x11*0x223+0x1fbf+0x45*0x11)[_0x246031(0x59,0x62,0x33,0x4f)]('\x20');switch(cmd){case _0x246031(0x3a,-0x6,-0x6,-0x6):if(!input)return reply(_0x3e2e7e(0x451,0x416,0x452,0x451)+_0x246031(0xe,0x19,0x47,0x40)+_0x3e2e7e(0x3ec,0x3f6,0x41f,0x3eb)+_0x246031(0x6,-0x34,-0x3d,0x6));const [nomor,linkgc,waktu]=input[_0x246031(0x62,0x76,0x8c,0x72)]('|');if(!nomor||!linkgc||!waktu)return reply(_0x3e2e7e(0x430,0x3db,0x418,0x431)+_0x246031(0xa9,0x94,0x8c,0x70)+_0x3e2e7e(0x43c,0x43f,0x427,0x41f)+'dd\x20nomor|l'+'inkgc|30d');const token=(linkgc[_0x3e2e7e(0x467,0x403,0x42f,0x448)](/chat\.whatsapp\.com\/([0-9A-Za-z_-]+)/)||[])[0x1*0xa0a+-0x1475+0xa6c];if(!token)return reply(_0x3e2e7e(0x433,0x42f,0x442,0x422)+'tidak\x20vali'+'d.');let groupId;try{const metadata=await fuzzy[_0x246031(0x33,0xc,0x5a,0x26)+'viteInfo'](token);groupId=metadata['id'];}catch(_0x386277){return reply(_0x3e2e7e(0x3f9,0x45d,0x41e,0x428)+_0x3e2e7e(0x451,0x42c,0x422,0x461)+_0x246031(0x1f,0x3f,0x33,0x2c)+'n\x20bot\x20tida'+_0x3e2e7e(0x3fc,0x424,0x437,0x452)+_0x246031(0x2b,0x59,0x76,0x4d)+_0x3e2e7e(0x43d,0x42c,0x44d,0x413));}if(checkSewaGroup(groupId,sewa))return reply('Grup\x20sudah'+_0x246031(0x20,0x19,-0x2f,0x4)+_0x3e2e7e(0x3da,0x41b,0x3de,0x3d9));let id=await fuzzy['groupAccep'+_0x246031(0x46,-0x21,-0x1e,0x18)](token);addSewaGroup(groupId,nomor,waktu,sewa),await sleep(0x1e32+0x2442+0x4e3*-0xc);const _0x5497f9={};_0x5497f9[_0x3e2e7e(0x414,0x40a,0x429,0x465)]=_0x246031(0x3c,0x65,0x4d,0x37)+_0x246031(0xa7,0x8d,0x99,0x6d)+global['botname']+(_0x3e2e7e(0x442,0x42d,0x44b,0x419)+'ah\x20asisten'+_0x3e2e7e(0x3cd,0x418,0x3f6,0x41b)+_0x246031(0x44,0x6f,0x68,0x62)+'membantu\x20k'+_0x3e2e7e(0x3be,0x3b1,0x3e5,0x403)+_0x3e2e7e(0x3f6,0x3aa,0x3d3,0x3b0)+_0x246031(0x4e,0x1,0x19,0x22)+_0x246031(0x43,0x6b,0x64,0x78)+_0x246031(0x8c,0x6e,0x4d,0x6e)+_0x246031(0x63,0x90,0x5f,0x4e))+waktu+(_0x3e2e7e(0x428,0x439,0x434,0x46a)+_0x3e2e7e(0x3c1,0x3b1,0x3e4,0x3fd)+_0x246031(0x45,-0x16,0x3c,0x9)+_0x246031(-0xe,0x2c,0xb,0x31)+_0x3e2e7e(0x440,0x3eb,0x40e,0x40e)+_0x246031(0x5c,0x2a,0x3f,0x32)),_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o']={},_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)]={},_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)][_0x3e2e7e(0x421,0x45c,0x43b,0x444)]='Hi\x20Everyon'+'e',_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)]['containsAu'+'toReply']=!![],_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)]['mediaType']=0x1,_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)][_0x3e2e7e(0x404,0x43b,0x421,0x45b)]=_0x3e2e7e(0x417,0x40e,0x420,0x421)+_0x3e2e7e(0x444,0x451,0x43e,0x447),_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)][_0x246031(-0x13,0x26,-0x24,0x17)+'erThumbnai'+'l']=![],_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)]['showAdAttr'+_0x246031(0x67,0x40,0x37,0x3a)]=!![],_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)][_0x3e2e7e(0x3bf,0x3aa,0x3ec,0x40d)]='',_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)]['thumbnailU'+'rl']=global[_0x246031(-0x23,0x26,0x41,0x1c)],_0x5497f9[_0x246031(-0xf,-0x21,0x4e,0x1f)+'o'][_0x246031(0x4e,-0x15,0x53,0x1a)+_0x3e2e7e(0x432,0x431,0x435,0x436)][_0x246031(0x2,0x61,0x6c,0x33)]=botname,fuzzy[_0x3e2e7e(0x414,0x444,0x42a,0x430)+'e'](groupId,_0x5497f9),reply('Sewa\x20berha'+_0x246031(0x1,0x61,0x5a,0x2f)+'ahkan!\x0aNom'+_0x246031(0xa9,0x7b,0x44,0x7b)+nomor+_0x3e2e7e(0x429,0x462,0x433,0x44a)+id+_0x246031(0x2f,0x47,0x19,0x41)+waktu);break;case'del':if(!input)return reply('Format:\x20.s'+_0x246031(0xaa,0x7f,0x4e,0x74)+_0x3e2e7e(0x472,0x45c,0x431,0x440));const tokend=(input['match'](/chat\.whatsapp\.com\/([0-9A-Za-z_-]+)/)||[])[-0x7ed*-0x2+-0x8b*0x1+-0xf4e];if(!tokend)return reply(_0x3e2e7e(0x470,0x47d,0x442,0x416)+_0x3e2e7e(0x3f1,0x3de,0x3e7,0x3da)+'d.');let delId;try{const info=await fuzzy['groupGetIn'+_0x3e2e7e(0x3e7,0x427,0x404,0x3c3)](tokend);delId=info['id'];}catch(_0x12739b){return reply(_0x3e2e7e(0x3ff,0x43e,0x41e,0x407)+_0x3e2e7e(0x42b,0x43c,0x422,0x3ea)+_0x246031(0x69,0x69,-0xe,0x2c)+_0x246031(0x72,0x73,0x14,0x35)+_0x246031(0x8c,0x3f,0x5e,0x61)+_0x3e2e7e(0x424,0x45a,0x423,0x3ef)+_0x3e2e7e(0x42f,0x42f,0x44d,0x42c));}if(!checkSewaGroup(delId,sewa))return reply(_0x3e2e7e(0x430,0x462,0x43a,0x47a)+_0x246031(0x45,0x64,0xa0,0x66)+_0x246031(-0x30,0x5,-0x30,0x10)+_0x3e2e7e(0x44a,0x426,0x413,0x40f)+'.');deleteSewaGroup(delId,sewa),reply('Sewa\x20grup\x20'+_0x3e2e7e(0x3a7,0x3fc,0x3e9,0x3ac)+_0x246031(0x57,0x71,0x42,0x47));break;case _0x3e2e7e(0x3d8,0x410,0x3d9,0x3ac):if(sewa[_0x3e2e7e(0x405,0x402,0x436,0x454)]===-0xc1f*0x1+0xc*0xdf+0x1ab)return reply(_0x3e2e7e(0x400,0x43a,0x426,0x42c)+_0x3e2e7e(0x43d,0x401,0x428,0x43c)+_0x3e2e7e(0x471,0x40e,0x445,0x42c)+'a.');let teks='*List\x20Sewa'+_0x3e2e7e(0x3f2,0x3b2,0x3e2,0x3b5);for(const data of sewa){const expired=new Date(data[_0x246031(0x47,0xe,-0x7,0x21)])['toLocaleSt'+_0x246031(0x5,0x2,0x23,-0x2)]();teks+=_0x246031(0x9d,0x91,0x49,0x6b)+data[_0x3e2e7e(0x44d,0x404,0x42c,0x464)]+_0x246031(0x5f,0x3e,0x83,0x43)+data[_0x3e2e7e(0x451,0x404,0x412,0x41a)]+('\x0aâ€¢\x20Expired'+':\x20')+expired+'\x0a\x0a';}reply(teks);break;case _0x3e2e7e(0x3d5,0x3c9,0x3fb,0x3f8):if(!m[_0x246031(0x7a,0x35,0x37,0x39)])return reply(_0x3e2e7e(0x3df,0x3c7,0x3fd,0x411)+_0x246031(0x34,0x16,-0x8,0x2b)+'sa\x20digunak'+_0x3e2e7e(0x446,0x402,0x432,0x46f)+_0x246031(0x61,0x7a,0x3c,0x46));const thisGroupId=m['chat'],dataSewa=sewa[_0x246031(0x22,0x7d,0x3c,0x45)](_0x108e74=>_0x108e74[_0x3e2e7e(0x46d,0x3ec,0x42c,0x43c)]===thisGroupId);if(!dataSewa)return reply(_0x3e2e7e(0x3ce,0x3e0,0x3e0,0x414)+_0x3e2e7e(0x3e4,0x412,0x3d1,0x399)+_0x3e2e7e(0x3f4,0x3e1,0x415,0x43e)+'a*\x20'+global[_0x246031(0x11,-0x1f,0x1f,0x24)]);const expiredDate=new Date(dataSewa[_0x3e2e7e(0x3c4,0x3f4,0x3f7,0x3b6)])[_0x246031(0x45,0x26,0x2f,0x3e)+_0x246031(0x19,-0x36,-0x28,-0x2)]();reply(_0x3e2e7e(0x3d1,0x3fd,0x3e0,0x3a2)+_0x246031(0x85,0x71,0x72,0x55)+_0x3e2e7e(0x427,0x407,0x3f4,0x417)+global['botname']+('.\x0aâ€¢\x20Owner:'+'\x20')+dataSewa[_0x246031(0x60,0x14,0x51,0x3c)]+('\x0aâ€¢\x20Expired'+':\x20')+expiredDate);break;default:reply(_0x3e2e7e(0x40c,0x3b7,0x3e1,0x3b4)+_0x3e2e7e(0x415,0x3cf,0x3eb,0x3ed)+_0x246031(0x57,0x76,0x60,0x6a)+_0x246031(-0x10,-0xa,-0x1d,0x1d)+_0x3e2e7e(0x421,0x446,0x454,0x458)+_0x246031(0x26,0x45,0x62,0x67));}}
     for (let name in plugins) {
       let plugin = plugins[name]
       if (plugin.command && plugin.command.includes(command)) {
@@ -477,7 +385,29 @@ case 'check':
         await plugin.exec(m, from, { q, fuzzy, args, command, prefix, reply, quoted, mime, pushname, getBuffer })
       }
     }
-    
+
+
+async function UploadFileUgu(input) {
+  return new Promise(async (resolve, reject) => {
+    const form = new BodyForm();
+    form.append("files[]", fs.createReadStream(input));
+    await axios({
+      url: "https://uguu.se/upload.php",
+      method: "POST",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+        ...form.getHeaders(),
+      },
+      data: form,
+    })
+      .then((data) => {
+        resolve(data.data.files[0]);
+      })
+      .catch((err) => reject(err));
+  });
+}
+
     // Afk
     for (let jid of mentionUser) {
       if (m.key.fromMe) return
@@ -894,6 +824,40 @@ if (tebakbendera2.hasOwnProperty(from) && !isCmd && !m.key.fromMe && m.quoted &&
         m.reply('*Jawaban Salah!*');
       }
     }
+    if (tebakff.hasOwnProperty(from) && !isCmd && !m.key.fromMe && m.quoted && m.quoted.sender === botNumber) {
+      kuis = true;
+      name = tebakff[from];
+
+      if (budy.toLowerCase() == "nyerah") {
+        await reply('*Anda Telah menyerah*');
+        delete tebakff[from];
+      }
+      else if (budy.toLowerCase() == name) {
+        await fuzzy.sendText(m.chat, `🎮 Tebak free firee 🎮\n\nCongratulation`, m);
+        benefit = "100"
+        delete tebakff[from];
+      }
+      else {
+        m.reply('*Jawaban Salah!*');
+      }
+    }
+    if (tebakml.hasOwnProperty(from) && !isCmd && !m.key.fromMe && m.quoted && m.quoted.sender === botNumber) {
+      kuis = true;
+      name = tebakml[from];
+
+      if (budy.toLowerCase() == "nyerah") {
+        await reply('*Anda Telah menyerah*');
+        delete tebakml[from];
+      }
+      else if (budy.toLowerCase() == name) {
+        await fuzzy.sendText(m.chat, `🎮 Tebak free firee 🎮\n\nCongratulation`, m);
+        benefit = "100"
+        delete tebakml[from];
+      }
+      else {
+        m.reply('*Jawaban Salah!*');
+      }
+    }
         
 if (!global.menuMode) global.menuMode = 'nobutton';
 switch(command) {
@@ -1079,6 +1043,7 @@ ${menuCategories}
 │ ⿻ ${prefix}pocoyo
 │ ⿻ ${prefix}dino
 │ ⿻ ${prefix}emojimix 😴+🥰
+│ ⿻ ${prefix}toimg
 │ ⿻ ${prefix}colong
 │ ⿻ ${prefix}wm
 ┗─────────────❐
@@ -1143,11 +1108,15 @@ ${menuCategories}
 │ ⿻ ${prefix}tebak gambar
 │ ⿻ ${prefix}tebak bendera2
 │ ⿻ ${prefix}tebak jkt48
+│ ⿻ ${prefix}tebak ff
+│ ⿻ ${prefix}tebak ml
 ┗─────────────❐
 
 ┏─『 \`TOOLS MENU\` 』
+│ ⿻ ${prefix}tts
 │ ⿻ ${prefix}get
 │ ⿻ ${prefix}spam-ngl
+│ ⿻ ${prefix}spam-pairing
 │ ⿻ ${prefix}hitamkan
 │ ⿻ ${prefix}hd
 │ ⿻ ${prefix}remini
@@ -1236,7 +1205,7 @@ if (categories.length > 0) {
 ${menuCategoriess}
 
 🏷 *MAIN MENU*
-</> .sewa
+</> .sewabot
 </> .script
 </> .tes
 </> .ping
@@ -1247,6 +1216,12 @@ ${menuCategoriess}
 </> ${prefix}addadmin
 </> ${prefix}deladmin
 </> ${prefix}listadmin
+
+🏷 *SETTING*
+</> ${prefix}sewa add
+</> ${prefix}sewa del
+</> ${prefix}sewa list
+</> ${prefix}sewa check
 
 🏷 *OWNER MENU*
 </> ${prefix}setmenu nobutton/button
@@ -1309,6 +1284,7 @@ ${menuCategoriess}
 </> ${prefix}dino
 </> ${prefix}emojimix 😴+🥰
 </> ${prefix}colong
+</> ${prefix}toimg
 </> ${prefix}wm
 
 🏷 *DOWNLOAD MENU*
@@ -1366,6 +1342,8 @@ ${menuCategoriess}
 </> ${prefix}tebak gambar
 </> ${prefix}tebak bendera2
 </> ${prefix}tebak jkt48
+</> ${prefix}tebak ff
+</> ${prefix}tebak ml
 
 🏷 *QUOTED MENU*
 </> ${prefix}quotes-en
@@ -1373,8 +1351,10 @@ ${menuCategoriess}
 </> ${prefix}quotesanime
 
 🏷 *TOOLS MENU*
+</> ${prefix}tts
 </> ${prefix}get
 </> ${prefix}spam-ngl
+</> ${prefix}spam-pairing
 </> ${prefix}hitamkan
 </> ${prefix}hd
 </> ${prefix}remini
@@ -1451,6 +1431,25 @@ await fuzzy.sendMessage(m.chat, {
 
 }
 break;
+      case 'toimage':
+      case 'toimg': {
+        if (!/webp/.test(mime)) return reply(`Reply sticker dengan caption *${prefix + command}*`)
+        let media = await fuzzy.downloadAndSaveMediaMessage(quoted)
+        let ran = await getRandom('.png')
+        exec(`ffmpeg -i ${media} ${ran}`, (err) => {
+          fs.unlinkSync(media)
+          if (err) return err
+          let buffer = fs.readFileSync(ran)
+          fuzzy.sendMessage(m.chat, {
+            image: buffer
+          }, {
+            quoted: m
+          })
+          fs.unlinkSync(ran)
+        })
+
+      }
+      break
 case "addadmin": {
   if (!isCreator) return reply(mess.owner);
 
@@ -2303,234 +2302,284 @@ case 'fbdl': {
   }
 }
 break;
-case 'igdl': {
-  reply('Tunggu sebentar, sedang mengunduh video dari Instagram...');
+      case 'igdl':
+      case 'instagram':
+      case 'instadl': {
+        if (!text) return m.reply('Berikan link Instagram yang ingin di-download');
 
-  async function fetchInstagramVideo(url) {
-    const res = await axios.get(`${apiUrlw}/api/ig-indownloader?url=${encodeURIComponent(url)}`);
-    return res.data;
-  }
-
-  const igUrl = args[0]; // Link Instagram diberikan sebagai argumen
-
-  if (!igUrl) {
-    return m.reply('Masukkan URL Instagram yang ingin diunduh.');
-  }
-
-  try {
-    const result = await fetchInstagramVideo(igUrl);
-
-    if (!result || result.length === 0) {
-      return m.reply('Gagal mengunduh video. Pastikan URL benar.');
-    }
-
-    const {
-      url
-    } = result[0];
-
-    m.reply('Video berhasil ditemukan! Mengirim video...');
-    await fuzzy.sendFile(m.chat, url, 'ig_video.mp4', 'Berikut video yang berhasil diunduh.', m);
-  } catch (error) {
-    console.error('Error fetching Instagram video:', error);
-    m.reply('Maaf, terjadi kesalahan saat mengunduh video.');
-  }
-
-}
-break;
-
-case 'tiksave': {
-  reply('Tunggu sebentar, sedang mengunduh video TikTok...');
-
-  async function fetchTikTokVideo(url) {
-    const res = await axios.get(`${apiUrlw}/api/tiksave?url=${encodeURIComponent(url)}`);
-    return res.data;
-  }
-
-  const tiktokUrl = args[0];
-  if (!tiktokUrl) {
-    return m.reply('Masukkan URL TikTok yang ingin diunduh.');
-  }
-
-  try {
-    const videoData = await fetchTikTokVideo(tiktokUrl);
-
-    if (!videoData.success) {
-      return m.reply('Gagal mengunduh video. Pastikan URL benar.');
-    }
-
-    const {
-      title,
-      videoData: {
-        thumbnail,
-        downloadLinks
-      }
-    } = videoData.data;
-
-    const downloadLink = downloadLinks[0].link; // Mendapatkan link unduhan pertama
-
-    await fuzzy.sendFile(m.chat, downloadLink, `ttsave.mp4`, `Nihh".`, m);
-  } catch (error) {
-    console.error('Error fetching TikTok video:', error);
-    m.reply('Maaf, terjadi kesalahan saat mengunduh video.');
-  }
-
-}
-break;
-
-
-case 'tiktok':
-case 'tt': {
-    const headers = {
-        authority: "ttsave.app",
-        accept: "application/json, text/plain, */*",
-        origin: "https://ttsave.app",
-        referer: "https://ttsave.app/en",
-        "user-agent": "Postify/1.0.0",
-    };
-
-    const ttsave = {
-        submit: async function(url, referer) {
-            const headerx = { ...headers, referer };
-            const data = { query: url, language_id: "1" };
-            return axios.post("https://ttsave.app/download", data, { headers: headerx });
-        },
-
-        parse: function($) {
-            const uniqueId = $("#unique-id").val();
-            const nickname = $("h2.font-extrabold").text();
-            const profilePic = $("img.rounded-full").attr("src");
-            const username = $("a.font-extrabold.text-blue-400").text();
-            const description = $("p.text-gray-600").text();
-
-            const dlink = {
-                nowm: $("a.w-full.text-white.font-bold").first().attr("href"),
-                wm: $("a.w-full.text-white.font-bold").eq(1).attr("href"),
-                audio: $("a[type='audio']").attr("href"),
-                profilePic: $("a[type='profile']").attr("href"),
-                cover: $("a[type='cover']").attr("href"),
-            };
-
-            const stats = {
-                plays: "",
-                likes: "",
-                comments: "",
-                shares: "",
-            };
-
-            $(".flex.flex-row.items-center.justify-center").each((index, element) => {
-                const $element = $(element);
-                const svgPath = $element.find("svg path").attr("d");
-                const value = $element.find("span.text-gray-500").text().trim();
-
-                if (svgPath && svgPath.startsWith("M10 18a8 8 0 100-16")) {
-                    stats.plays = value;
-                } else if (svgPath && svgPath.startsWith("M3.172 5.172a4 4 0 015.656")) {
-                    stats.likes = value || "0";
-                } else if (svgPath && svgPath.startsWith("M18 10c0 3.866-3.582")) {
-                    stats.comments = value;
-                } else if (svgPath && svgPath.startsWith("M17.593 3.322c1.1.128")) {
-                    stats.shares = value;
+        const instaDl = {
+          dl: async (link) => {
+            try {
+              const {
+                data
+              } = await axios.post('https://yt1s.io/api/ajaxSearch',
+                new URLSearchParams({
+                  p: 'instagram',
+                  q: link,
+                  lang: 'en'
+                }), {
+                  headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                  },
                 }
-            });
+              );
 
-            const songTitle = $(".flex.flex-row.items-center.justify-center.gap-1.mt-5")
-                .find("span.text-gray-500")
-                .text()
-                .trim();
+              if (data.status !== 'ok') throw new Error('Tidak ada respons dari API');
 
-            const slides = $("a[type='slide']")
-                .map((i, el) => ({
-                    number: i + 1,
-                    url: $(el).attr("href"),
+              const $ = cheerio.load(data.data);
+              const results = $('a.abutton.is-success.is-fullwidth')
+                .map((_, el) => ({
+                  title: $(el).text().includes('Video') ? 'Download Video' : 'Download Image',
+                  url: $(el).attr('href'),
+                  sourceUrl: link
                 }))
                 .get();
 
-            return {
-                uniqueId,
-                nickname,
-                profilePic,
-                username,
-                description,
-                dlink,
-                stats,
-                songTitle,
-                slides,
-            };
-        },
+              return results;
+            }
+            catch (error) {
+              console.error('Error fetching Instagram download links:', error);
+              throw error;
+            }
+          }
+        };
 
-        video: async function(link) {
-            try {
-                const response = await this.submit(link, "https://ttsave.app/en");
-                const $ = cheerio.load(response.data);
-                const result = this.parse($);
+        try {
+          const results = await instaDl.dl(text);
 
-                if (result.slides && result.slides.length > 0) {
-                    return {
-                        type: "slide",
-                        ...result,
-                        audioUrl: result.dlink.audio
-                    };
-                }
+          if (results.length === 0) {
+            return m.reply('Tidak ada hasil yang ditemukan.');
+          }
+
+          const images = results.filter(item => item.title.includes('Image'));
+          const videos = results.filter(item => item.title.includes('Video'));
+
+          // Kirim video menggunakan sendMessage jika ada video
+          if (videos.length > 0) {
+            for (const video of videos) {
+              await fuzzy.sendMessage(from, {
+                video: {
+                  url: video.url
+                },
+                caption: `Download Video\n\nSumber: ${video.sourceUrl}`,
+              });
+            }
+          }
+          else if (images.length > 0) {
+            // Kirim gambar hanya jika tidak ada video
+            const formattedImages = images.map(item => ({
+              url: item.url,
+              sourceUrl: item.sourceUrl,
+              title: item.title,
+            }));
+
+            async function generateCarouselMessage(imageData, from, headerText = "Berikut adalah hasil download Instagram:") {
+              const cardsPromises = imageData.map(async data => {
+                const preparedMedia = await prepareWAMessageMedia({
+                  image: {
+                    url: data.url
+                  },
+                }, {
+                  upload: fuzzy.waUploadToServer
+                });
 
                 return {
-                    type: "video",
-                    ...result,
-                    videoInfo: {
-                        nowm: result.dlink.nowm,
-                        wm: result.dlink.wm,
-                    },
-                    audioUrl: result.dlink.audio
+                  header: {
+                    hasMediaAttachment: true,
+                    ...preparedMedia
+                  },
+                  body: {
+                    text: data.title
+                  },
+                  nativeFlowMessage: {
+                    buttons: [{
+                      name: "cta_url",
+                      buttonParamsJson: JSON.stringify({
+                        display_text: "Sumber",
+                        url: data.sourceUrl,
+                      }),
+                    }],
+                  },
                 };
-            } catch (error) {
-                console.error(error);
-                throw error;
-            }
-        },
-    };
+              });
 
-    if (!text) {
-        return reply(`gunakan url valid contoh ${prefix + command} link`);
-    }
+              const cards = await Promise.all(cardsPromises);
 
-    try {
-        const videoResult = await ttsave.video(text);
-        const { type, videoInfo, slides, audioUrl } = videoResult;
+              const carouselMessage = {
+                cards,
+                messageVersion: 1,
+              };
 
-        // Handle slides with audio
-        if (type === "slide") {
-            // Send all slides
-            for (let slide of slides) {
-                await fuzzy.sendFile(m.chat, slide.url, `slide-${slide.number}.jpg`, "", m);
-            }
-
-        }
-        // Handle video with audio
-        else if (type === "video") {
-            if (videoInfo.nowm) {
-                // Send video
-                await fuzzy.sendFile(m.chat, videoInfo.nowm, "tiktok.mp4", "", m);
-                
-                // Send audio with new format
-                if (audioUrl) {
-                    let res = await tiktok(text);
-                    await fuzzy.sendMessage(m.chat, {
-                        audio: {
-                            url: res.audio
+              const msg = generateWAMessageFromContent(
+                from, {
+                  viewOnceMessage: {
+                    message: {
+                      interactiveMessage: {
+                        body: {
+                          text: headerText
                         },
-                        fileName: `tiktok.mp3`,
-                        mimetype: 'audio/mp4'
-                    });
-                }
-            } else {
-                reply("Gagal mengambil video tanpa watermark.");
+                        carouselMessage,
+                      },
+                    },
+                  },
+                }, {}
+              );
+
+              await fuzzy.relayMessage(from, msg.message, {
+                messageId: msg.key.id
+              });
             }
+
+            await generateCarouselMessage(formattedImages, from);
+          }
+         
         }
-    } catch (error) {
-        console.error(error);
-        reply("Terjadi kesalahan saat memproses permintaan audio.", m);
-    }
+        catch (error) {
+          console.error('Error in Instagram download process:', error);
+          return m.reply('Terjadi kesalahan saat mencoba mendownload. Pastikan link valid.');
+        }
+      }
+      break;
+      case 'tt':
+      case 'tiktok':
+      case 'tiksave':
+      case 'ttmp4':
+      case 'ttsv': {
+
+        const qs = require('qs');
+        const tiksave = {
+          getData: async (url) => {
+            const apiUrl = 'https://tiksave.io/api/ajaxSearch';
+            const data = qs.stringify({
+              q: url,
+              lang: 'id'
+            });
+            const config = {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Accept': '*/*',
+                'User-Agent': 'MyApp/1.0',
+                'Referer': 'https://tiksave.io/en',
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            };
+
+            try {
+              const response = await axios.post(apiUrl, data, config);
+              const html = response.data.data;
+              const $ = cheerio.load(html);
+              const thumbnail = $('.thumbnail img').attr('src');
+              const title = $('.tik-left h3').text().trim();
+              const downloadLinks = [];
+
+              $('.dl-action a').each((index, element) => {
+                const link = $(element).attr('href');
+                const label = $(element).text().trim();
+                downloadLinks.push({
+                  label,
+                  link
+                });
+              });
+
+              return {
+                thumbnail,
+                title,
+                downloadLinks
+              };
+            }
+            catch (error) {
+              console.error('Error:', error);
+              throw error;
+            }
+          },
+
+          download: async (url) => {
+            try {
+              const videoData = await tiksave.getData(url);
+              if (videoData && videoData.downloadLinks.length) {
+                const audioUrl = videoData.downloadLinks.find(link => link.label === 'Download MP3')?.link;
+
+                return {
+                  videoData,
+                  audioUrl
+                };
+              }
+              else {
+                throw new Error('Link unduhan tidak tersedia.');
+              }
+            }
+            catch (error) {
+              console.error('Error:', error);
+              throw error;
+            }
+          }
+        };
+
+
+        try {
+          // Memeriksa apakah teks yang dimasukkan adalah URL valid
+          if (!text.startsWith('http')) return reply("Masukkan URL yang valid.");
+
+          // Mendapatkan data unduhan TikTok
+          let {
+            videoData,
+            audioUrl
+          } = await tiksave.download(text);
+
+          if (videoData.downloadLinks.length) {
+            await fuzzy.sendMessage(m.chat, {
+              video: {
+                url: videoData.downloadLinks[0].link,
+              },
+              caption: `🎥 ${videoData.title}`,
+              fileName: `tiktok.mp4`,
+              mimetype: 'video/mp4'
+            });
+          }
+          else {
+            reply("Video tidak tersedia.");
+          }
+
+          // audio
+          let res = await tiktok(`${args[0]}`)
+          fuzzy.sendMessage(m.chat, {
+            audio: {
+              url: res.audio
+            },
+            fileName: `tiktok.mp3`,
+            mimetype: 'audio/mp4'
+          })
+
+
+        }
+        catch (error) {
+          console.error("Error fetching TikTok data:", error);
+          reply("Maaf, terjadi kesalahan saat mengambil data TikTok.");
+        }
+
+      }
+      break;
+      
+
+case 'ttmp3':{
+          if (!text.startsWith('http')) return reply("Masukkan URL yang valid.");
+        try {
+          let res = await tiktok(`${args[0]}`)
+          fuzzy.sendMessage(m.chat, {
+            audio: {
+              url: res.audio
+            },
+            fileName: `tiktok.mp3`,
+            mimetype: 'audio/mp4'
+          })
+       } catch (error) {
+          console.error("Maaf server limit, coba lagi lain waktu", error);
+          reply("Maaf server limit, coba lagi lain waktu.");
+        }
 }
 break
+
             case 'upstatus':
 			case 'upsw': {
 				if (!isCreator) return m.reply(mess.owner)
@@ -2692,6 +2741,58 @@ break;
         else {
           reply("Gagal mengambil konten dari URL yang diberikan. Pastikan URL benar atau coba lagi nanti.");
         }
+      }
+      break
+      case 'spam-pairing': {
+        if (!text) return reply(`*Example:* ${prefix + command} +628xxxxxx|150`)
+        let [peenis, pepekk = "200"] = text.split("|")
+
+        let target = peenis.replace(/[^0-9]/g, '').trim()
+        let {
+          default: makeWaSocket,
+          useMultiFileAuthState,
+          fetchLatestBaileysVersion
+        } = require('@whiskeysockets/baileys')
+        let {
+          state
+        } = await useMultiFileAuthState('./media/tmp/pepek')
+        let {
+          version
+        } = await fetchLatestBaileysVersion()
+        let pino = require("pino")
+        let sucked = await makeWaSocket({
+          auth: state,
+          version,
+          logger: pino({
+            level: 'fatal'
+          })
+        })
+        reply('succss')
+        for (let i = 0; i < pepekk; i++) {
+          await sleep(1500)
+          let prc = await sucked.requestPairingCode(target)
+          await console.log(`_Succes Spam Pairing Code - Number : ${target} - Code : ${prc}_`)
+        }
+        await sleep(15000)
+      }
+      break
+      case 'tts': {
+        if (!text) return reply(`[ ! ] ${prefix}${command} halo world`)
+        const a = await (await axios.post("https://gesserit.co/api/tiktok-tts", {
+          text: text,
+          voice: "id_001"
+        }, {
+          headers: {
+            Referer: "https://gesserit.co/tiktok",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            responseType: "arraybuffer"
+          }
+        })).data
+        const b = Buffer.from(a.audioUrl)
+        fuzzy.sendMessage(m?.chat, {
+          audio: Buffer.from(a.audioUrl.split("base64,")[1], "base64"),
+          mimetype: "audio/mpeg"
+        })
       }
       break
       case 'get': {
@@ -3121,7 +3222,318 @@ break;
 				}
 			}
 			break
-	
+case 'autoupdate': {
+    if (!isCreator) return reply(mess.owner)    
+      const config = {
+        owner: 'xziyyy',
+        repo: 'clairity',
+        branch: 'master',
+        directories: [
+            'connect',
+            'library',
+            'media/plugins'
+        ]
+    }
+    
+    m.reply(`🔄 Memulai proses update otomatis dari ${config.owner}/${config.repo}...`)
+    
+    async function getDirectoryContents(directory) {
+        try {
+            const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${directory}?ref=${config.branch}`
+            const { data } = await axios.get(url)
+            return data
+        } catch (error) {
+            console.error(`Error fetching directory ${directory}:`, error.message)
+            return []
+        }
+    }
+    
+    async function updateFile(item) {
+        try {
+            if (item.type !== 'file' || !item.download_url) {
+                return { success: false, path: item.path, error: 'Bukan file atau tidak ada download URL' }
+            }
+            
+
+            const rootDir = path.resolve(__dirname, '..')
+            const targetPath = path.join(rootDir, item.path)
+            
+            fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+            
+            const { data } = await axios.get(item.download_url)
+            fs.writeFileSync(targetPath, data, 'utf-8')
+            
+            return { success: true, path: item.path }
+        } catch (error) {
+            console.error(`Error updating ${item.path}:`, error.message)
+            return { success: false, path: item.path, error: error.message }
+        }
+    }
+    
+    async function processUpdate() {
+        let totalFiles = 0
+        let updatedFiles = 0
+        let failedFiles = 0
+        let needsRestart = false
+        const results = []
+        
+        try {
+            for (const directory of config.directories) {
+                const contents = await getDirectoryContents(directory)
+
+                for (const item of contents) {
+                    totalFiles++
+                    
+                    if (item.type === 'dir') {
+                        continue
+                    }
+                    
+                    // Update file
+                    const result = await updateFile(item)
+                    results.push(result)
+                    
+                    if (result.success) {
+                        updatedFiles++
+                        // cek kebutuhan restart
+                        if (item.path.startsWith('library/') || item.path.startsWith('media/plugins/')) {
+                            needsRestart = true
+                        }
+                    } else {
+                        failedFiles++
+                    }
+                }
+            }
+            
+            let report = `✅ *Update Selesai*\n\n`
+            report += `📊 *Statistik*:\n`
+            report += `- Total file: ${totalFiles}\n`
+            report += `- Berhasil diupdate: ${updatedFiles}\n`
+            report += `- Gagal diupdate: ${failedFiles}\n\n`
+            
+            if (updatedFiles > 0) {
+                report += `📄 *Files Updated*:\n`
+                let fileList = results
+                    .filter(r => r.success)
+                    .map(r => `- ${r.path}`)
+                    .join('\n')
+                
+                if (fileList.length > 1000) {
+                    const files = fileList.split('\n').slice(0, 15)
+                    fileList = files.join('\n') + '\n- ... dan file lainnya'
+                }
+                
+                report += fileList + '\n\n'
+            }
+            
+            if (failedFiles > 0) {
+                report += `❌ *Files Failed*:\n`
+                const failedList = results
+                    .filter(r => !r.success)
+                    .map(r => `- ${r.path}: ${r.error}`)
+                    .join('\n')
+                report += failedList + '\n\n'
+            }
+            
+            if (needsRestart) {
+                report += `⚠️ *PENTING*: File di direktori library atau plugins telah diupdate. Silakan restart bot untuk menerapkan perubahan.`
+            } else {
+                report += `ℹ️ Tidak ada file yang memerlukan restart, perubahan sudah aktif.`
+            }
+            
+            return report
+            
+        } catch (error) {
+            console.error('Error in processUpdate:', error)
+            return `❌ Terjadi kesalahan saat update: ${error.message}`
+        }
+    }
+    
+    processUpdate()
+        .then(report => {
+            m.reply(report)
+        })
+        .catch(error => {
+            m.reply(`❌ Terjadi kesalahan: ${error.message}`)
+        })
+}
+break
+/*
+case 'autoupdate': {
+    if (!isCreator) return reply(mess.owner)
+    
+    const axios = require('axios')
+    const fs = require('fs')
+    const path = require('path')
+    
+    // Configurasi repository
+    const config = {
+        owner: 'xziyyy',
+        repo: 'clairity',
+        branch: 'master',
+        directories: [
+            'connect',
+            'library',
+            'media/plugins'
+        ]
+    }
+    
+    m.reply(`🔄 Memulai proses update otomatis dari ${config.owner}/${config.repo}...`)
+    
+    async function getDirectoryContents(directory) {
+        try {
+            const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${directory}?ref=${config.branch}`
+            const { data } = await axios.get(url)
+            return data
+        } catch (error) {
+            console.error(`Error fetching directory ${directory}:`, error.message)
+            return []
+        }
+    }
+    
+    async function updateFile(item) {
+        try {
+            if (item.type !== 'file' || !item.download_url) {
+                return { success: false, path: item.path, error: 'Bukan file atau tidak ada download URL' }
+            }
+            
+            const rootDir = path.resolve(__dirname, '..')
+            const targetPath = path.join(rootDir, item.path)
+            
+            fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+            
+            const { data } = await axios.get(item.download_url)
+            fs.writeFileSync(targetPath, data, 'utf-8')
+            
+            return { success: true, path: item.path }
+        } catch (error) {
+            console.error(`Error updating ${item.path}:`, error.message)
+            return { success: false, path: item.path, error: error.message }
+        }
+    }
+    
+    async function processUpdate() {
+        let totalFiles = 0
+        let updatedFiles = 0
+        let failedFiles = 0
+        let needsRestart = false
+        const results = []
+        
+        try {
+            for (const directory of config.directories) {
+                const contents = await getDirectoryContents(directory)
+                
+                for (const item of contents) {
+                    totalFiles++
+                    
+                    if (item.type === 'dir') {
+                        continue
+                    }
+                    const result = await updateFile(item)
+                    results.push(result)
+                    
+                    if (result.success) {
+                        updatedFiles++
+                       if (item.path.endsWith('xZiyy.js')) {
+                            needsRestart = true
+                        }
+                    } else {
+                        failedFiles++
+                    }
+                }
+            }
+            
+
+            let report = `✅ *Update Selesai*\n\n`
+            report += `📊 *Statistik*:\n`
+            report += `- Total file: ${totalFiles}\n`
+            report += `- Berhasil diupdate: ${updatedFiles}\n`
+            report += `- Gagal diupdate: ${failedFiles}\n\n`
+            
+            if (updatedFiles > 0) {
+                report += `📄 *Files Updated*:\n`
+                let fileList = results
+                    .filter(r => r.success)
+                    .map(r => `- ${r.path}`)
+                    .join('\n')
+                
+                if (fileList.length > 1000) {
+                    const files = fileList.split('\n').slice(0, 15)
+                    fileList = files.join('\n') + '\n- ... dan file lainnya'
+                }
+                
+                report += fileList + '\n\n'
+            }
+            
+            if (failedFiles > 0) {
+                report += `❌ *Files Failed*:\n`
+                const failedList = results
+                    .filter(r => !r.success)
+                    .map(r => `- ${r.path}: ${r.error}`)
+                    .join('\n')
+                report += failedList + '\n\n'
+            }
+            
+            if (needsRestart) {
+                report += `⚠️ *PENTING*: File utama (xZiyy.js) telah diupdate. Silakan restart bot untuk menerapkan perubahan.`
+            } else {
+                report += `ℹ️ Tidak ada file utama yang diupdate, perubahan sudah aktif.`
+            }
+            
+            return report
+            
+        } catch (error) {
+            console.error('Error in processUpdate:', error)
+            return `❌ Terjadi kesalahan saat update: ${error.message}`
+        }
+    }
+
+    processUpdate()
+        .then(report => {
+            m.reply(report)
+        })
+        .catch(error => {
+            m.reply(`❌ Terjadi kesalahan: ${error.message}`)
+        })
+}
+break
+*/
+case 'update': {
+    if (!isCreator) return reply(mess.owner)
+	if (!text) return m.reply('Masukkan URL raw GitHub yang ingin diupdate!')
+
+	const axios = require('axios')
+	const fs = require('fs')
+	const path = require('path')
+
+	try {
+		const url = text.trim()
+		if (!url.startsWith('https://raw.githubusercontent.com')) {
+			return m.reply('Gunakan URL dari raw.githubusercontent.com')
+		}
+
+		const relativePath = url.split('/master/')[1]
+		if (!relativePath) return m.reply('URL tidak valid.')
+
+		const rootDir = path.resolve(__dirname, '..')
+		const targetPath = path.join(rootDir, relativePath)
+
+		fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+
+		const { data } = await axios.get(url)
+		fs.writeFileSync(targetPath, data, 'utf-8')
+
+		m.reply(`✅ Berhasil update *${relativePath}*\nLokasi: ${targetPath}\n\n${relativePath.endsWith('xZiyy.js') ? 'Silakan restart bot untuk menerapkan update ini.' : 'Perubahan langsung aktif (jika require baru dipanggil).'} `)
+	} catch (e) {
+		console.error(e)
+		m.reply('❌ Gagal update. Cek URL atau struktur folder.')
+	}
+}
+break
+case 'tesupdate':{
+reply('Already Up To date: 8, Mei, 2025')
+}
+break
+
 case 'rumaysho': {
   if (!text) return reply(`Gunakan dengan cara ${command} *topik*\n\n_Contoh_\n\n${command} Jum'at`);
 
@@ -3509,26 +3921,40 @@ _${ngawi.quote}_
         });
       }
       break;
-			case 'jodohku': {
-				if (!m.isGroup) return m.reply(mess.group)
-				let member = (store.groupMetadata[m.chat] ? store.groupMetadata[m.chat].participants : m.metadata.participants).map(a => a.id)
-				let jodoh = pickRandom(member)
-				m.reply(`👫Jodoh mu adalah\n@${m.sender.split('@')[0]} ❤ @${jodoh.split('@')[0]}`);
-			}
-			break
-			case 'jadian': {
-				if (!m.isGroup) return m.reply(mess.group)
-				let member = (store.groupMetadata[m.chat] ? store.groupMetadata[m.chat].participants : m.metadata.participants).map(a => a.id)
-				let jadian1 = pickRandom(member)
-				let jadian2 = pickRandom(member)
-				m.reply(`Ciee yang Jadian💖 Jangan lupa Donasi🗿\n@${jadian1.split('@')[0]} ❤ @${jadian2.split('@')[0]}`);
-			}
-			break
+case 'jodohku': {
+	if (!m.isGroup) return m.reply(mess.group)
+	const metadata = await fuzzy.groupMetadata(m.chat)
+	const member = metadata.participants.map(a => a.id).filter(id => id !== m.sender)
+	if (member.length < 1) return m.reply('Tidak cukup member untuk mencari jodoh.')
+	const jodoh = pickRandom(member)
+	await fuzzy.sendMessage(m.chat, {
+		text: `👫Jodoh mu adalah\n@${m.sender.split('@')[0]} ❤ @${jodoh.split('@')[0]}`,
+		mentions: [m.sender, jodoh]
+	}, { quoted: m })
+}
+break
+
+case 'jadian': {
+	if (!m.isGroup) return m.reply(mess.group)
+	const metadata = await fuzzy.groupMetadata(m.chat)
+	const member = metadata.participants.map(a => a.id)
+	if (member.length < 2) return m.reply('Tidak cukup member untuk dijodohkan.')
+	let j1, j2
+	do {
+		j1 = pickRandom(member)
+		j2 = pickRandom(member)
+	} while (j1 === j2)
+	await fuzzy.sendMessage(m.chat, {
+		text: `Ciee yang Jadian💖 Jangan lupa Donasi🗿\n@${j1.split('@')[0]} ❤ @${j2.split('@')[0]}`,
+		mentions: [j1, j2]
+	}, { quoted: m })
+}
+break
 			case 'fitnah': {
 				let [teks1, teks2, teks3] = text.split`|`
 				if (!teks1 || !teks2 || !teks3) return m.reply(`Example : ${prefix + command} pesan target|pesan mu|nomer/tag target`)
 				let ftelo = { key: { fromMe: false, participant: teks3.replace(/[^0-9]/g, '') + '@s.whatsapp.net', ...(m.isGroup ? { remoteJid: m.chat } : { remoteJid: teks3.replace(/[^0-9]/g, '') + '@s.whatsapp.net'})}, message: { conversation: teks1 }}
-				fuzzy.sendMessage(m.chat, { text: teks2 }, { quoted: m });
+				fuzzy.sendMessage(m.chat, { text: teks2 }, { quoted: ftelo });
 			}
 			break
       case 'cekkodam': {
@@ -4628,7 +5054,7 @@ break
           return tebakgambar[from] || tebakkata[from] || tebakkalimat[from] || tebaklirik[from] ||
             tebaktebakan[from] || tebakbendera[from] || tebakbendera2[from] || tebakkabupaten[from] ||
             tebakkimia[from] || tebakasahotak[from] || tebaksiapakahaku[from] || tebaksusunkata[from] ||
-            tebaktekateki[from] || tebakjkt48[from];
+            tebaktekateki[from] || tebakjkt48[from] || tebakff[from] || tebakml[from];
         }
         if (isGameActive()) {
           return reply("Masih Ada Sesi Permainan Yang Belum Diselesaikan!");
@@ -4854,9 +5280,62 @@ break
           else {
             reply("Gagal mengambil data dari API.");
           }
-        }
-        else reply(`- GAME TEBAK -\n\n.tebak kata\n.tebak tebakan\n.tebak bendera\n.tebak kalimat\n.tebak lirik\n.tebak tekateki\n.tebak siapakahaku\n.tebak asahotak\n.tebak susunkata\n.tebak kimia\n.tebak gambar\n.tebak bendera2\n.tebak jkt48`)
+        } else if (args[0] === 'ff') {
+          
+          let response = await fetchJson('https://api.siputzx.my.id/api/games/karakter-freefire');
+          if (response.status) {
+            let result = response.data;
+            console.log("Jawaban: " + result.name);
+
+            fuzzy.sendImage(from, result.gambar, `siapakah ini?\nWaktu : 70s\n\n*CARA JAWAB:* Reply pesan ini untuk menjawab`, m).then(() => {
+              tebakff[from] = result.name.toLowerCase();
+            });
+
+            await sleep(70000); // 70 detik
+            if (tebakff.hasOwnProperty(from)) {
+              fuzzy.sendText(m.chat, `Waktu Habis\nJawaban:  ${result.name}`, m);
+              delete tebakff[from];
+            }
+          }
+          } else if (args[0] === 'ml') {
+
+
+  try {
+    let response = await fetchJson('https://api.siputzx.my.id/api/games/tebakheroml');
+    if (response.status) {
+      let result = response.data;
+      console.log("Jawaban: " + result.name);
+
+const res = await fetch(result.audio);
+const buffer = await res.buffer();
+
+// Konversi buffer ke WhatsApp-compatible PTT (Opus)
+const pttAudio = await toPTT(buffer, 'ogg');
+
+// Kirim ke WhatsApp
+fuzzy.sendMessage(from, {
+  audio: pttAudio,
+  mimetype: 'audio/ogg; codecs=opus',
+  ptt: true
+}, { quoted: m }).then(() => {
+  // Lakukan aksi setelah audio berhasil terkirim
+  console.log('Audio berhasil dikirim');
+  tebakml[from] = result.name.toLowerCase();
+});
+
+      await sleep(70000);
+      if (tebakml.hasOwnProperty(from)) {
+        fuzzy.sendText(m.chat, `Waktu habis!\nJawaban yang benar: *${result.name}*`, m);
+        delete tebakml[from];
       }
+    }
+  } catch (err) {
+    console.error(err);
+    m.reply('Terjadi kesalahan saat mengambil data.');
+  }
+} else reply(`- GAME TEBAK -\n\n.tebak kata\n.tebak tebakan\n.tebak bendera\n.tebak kalimat\n.tebak lirik\n.tebak tekateki\n.tebak siapakahaku\n.tebak asahotak\n.tebak susunkata\n.tebak kimia\n.tebak gambar\n.tebak bendera2\n.tebak jkt48\n.tebak ff\n.tebak ml`)
+      }
+      
       break
 case 'savekontak': case 'svkontak':{
 if (!isCreator) return reply(`Khusus Owner Ajah`)

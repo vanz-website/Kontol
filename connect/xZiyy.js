@@ -6,22 +6,17 @@ ERROR TANGGUNG SENDIRI
 
  Allert !
 jangan asal ubah nanti eror
-// eror? contact me : 6283804078729
+// eror? contact me : 6281291418274
 
 jangan hapus Nama gw di Tq To dasar bocah Copy paste
 // copy boleh asal apa? asal no delete w m
 // apa itu wm: watermark
 // apa itu watermark? fungsi google apa
 
-anda bingung? masuk aja gc ini
-https://chat.whatsapp.com/Lf6XnvJfYZdESpR9RfEnJh
 jangan sungkan² untuk bertanya
 
- ©Aypa Team
-* [`Aprilia`](https://github.com/?)
-* [`YanzBotz`](https://github.com/YanzBotz)
-* [`Febriansyah`](https://github.com/FebriansyahXd)
-* [`Aldi Fauzi`](https://github.com/xZiyyy) // ME xZiyy
+ ©Cyber Vanz
+* [`VanzBotz`](https://github.com/vanz-website)
 
 Thanks For Using My Project and Thanks For u Has Respect The creator
 */
@@ -864,9 +859,9 @@ switch(command) {
 case 'script':{
 reply(`
 ▧ 「 *LINK SCRIPT* 」
-│ https://youtube.com/@xziyy?si=ykmNPTiBGBrNzA-E
+│ 6281291418274
 │ script ini free dilarang menjual belikan.
-│ Credits: xZiyy
+│ Credits: Vanz
 │ madein: Indonesian
 ┗─────────────
 `)
@@ -1146,10 +1141,10 @@ ${menuCategories}
 
 ┏─ *TQ TO:*
 │   - ${global.ownername} (owner)
-│   - xZiyy
-│   - yanzdev
-│   - Siputzx Api
-│   - Clairity Api
+│   - VanZ
+│   - vanzdev
+│   - vanz Api
+│   - vanz Api
 │   - And All Creator
 ┗─────────────❐
 
@@ -1164,7 +1159,7 @@ ${menuCategories}
               body: `Hi ${pushname}`, // Isi deskripsi atau teks tambahan
               containsAutoReply: true, // Menunjukkan ini balasan otomatis (opsional)
               mediaType: 1, // Tipe media (1 untuk gambar, 2 untuk video, dll.)
-              mediaUrl: "https://xziyy.my.id", // URL media atau link utama
+              mediaUrl: "", // URL media atau link utama
               renderLargerThumbnail: true, // Membuat thumbnail lebih besar
               showAdAttribution: true, // Menampilkan label "Ad" (opsional)
               sourceUrl: "", // URL sumber yang akan diakses
@@ -1376,10 +1371,10 @@ ${menuCategoriess}
 
 ┏─ *TQ TO:*
 │   - ${global.ownername} (owner)
-│   - xZiyy
-│   - yanzdev
-│   - Siputzx Api
-│   - Clairity Api
+│   - Vanz
+│   - vanzdev
+│   - vanz Api
+│   - vanz Api
 │   - And All Creator
 ┗─────────────❐
 > click the button to get script
